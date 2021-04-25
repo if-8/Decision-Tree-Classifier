@@ -1,0 +1,131 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn import metrics
+from sklearn import tree
+from sklearn.metrics import plot_confusion_matrix
+from sklearn.metrics import accuracy_score
+
+# A
+from google.colab import files
+uploaded = files.upload() 
+df=pd.read_csv("mushrooms.csv")
+df.head()
+# dependent variable is the class (posionous or edible) because we are trying to figure out a model predicting
+# the edibility of a mushroom
+
+
+# Exploring data
+print(df.shape)
+print(df.columns.values)
+print(df.isnull().sum())
+
+plt.figure(1)
+sns.countplot(x='class', data=df)
+
+plt.figure(2)
+sns.countplot(y='odor', data=df)
+
+plt.figure(3)
+sns.countplot(x='spore-print-color', data=df)
+
+plt.show()
+
+
+# B
+feature_cols = ['cap-shape', 'cap-surface', 'cap-color', 'bruises',	'odor','gill-attachment','gill-spacing','gill-size',
+        'gill-color', 'stalk-shape','stalk-root','stalk-surface-above-ring','stalk-surface-below-ring','stalk-color-above-ring',
+        'stalk-color-below-ring','veil-type','veil-color','ring-number','ring-type','spore-print-color','population','habitat']
+X = df[feature_cols]
+y = df['class']
+
+
+# C
+df2 = pd.get_dummies(df, columns=['cap-shape', 'cap-surface', 'cap-color', 'bruises',	'odor','gill-attachment','gill-spacing','gill-size',
+        'gill-color', 'stalk-shape','stalk-root','stalk-surface-above-ring','stalk-surface-below-ring','stalk-color-above-ring',
+        'stalk-color-below-ring','veil-type','veil-color','ring-number','ring-type','spore-print-color','population','habitat'])
+print(df2.head())
+
+
+# D
+X = df2.iloc[:, 1:]
+y = df2.iloc[:, 0]
+print(X.head())
+print(y.head())
+# Random_state =2020. Training partition 0.7. stratify = y, max_depth = 6, use Entropy
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=2020, stratify=y)
+
+
+# E
+dt = DecisionTreeClassifier(criterion='entropy', max_depth=6)
+dt.fit(X_train, y_train)
+y_pred = dt.predict(X_test)
+
+
+# 2
+cf = metrics.confusion_matrix(y_test, y_pred)
+print(cf)
+
+metrics.plot_confusion_matrix(dt, X_test, y_test)
+plt.show()
+
+
+# 3
+training_pred = dt.predict(X_train)
+acc_training = accuracy_score(training_pred, y_train)
+print("Accuracy on Training partition:",acc_training)
+
+# 4
+acc_testing = accuracy_score(y_pred, y_test)
+print("Accuracy on Testing partition:",acc_testing)
+
+
+# 5
+fn = X.columns
+
+plt.figure(figsize=(12,12))
+classList = list(map(str,dt.classes_.tolist()))
+a = tree.plot_tree(dt, feature_names=fn, class_names=classList, filled=True)
+plt.show()
+
+
+# 6
+feature_importances = dt.feature_importances_
+features = X_train.columns
+frame = pd.DataFrame({'features': features, 'importance': feature_importances}).nlargest(3, 'importance')
+print(frame)
+
+
+#7
+# Enter your code here
+#pd.set_option('display.max_columns', None)
+#print(df2.head())
+x_new = [[0,0,0,0,0,1, #cap_shape x
+          0,0,1,0, #cap_surface s
+          0,0,0,0,1,0,0,0,0,0, #cap_color n
+          0,1, #bruises t
+          0,0,0,0,0,0,0,0,1, #odor y
+          0,1, #gill_attachment f
+          1,0, #gill_spacing c
+          0,1, #gill_size n
+          0,0,0,0,1,0,0,0,0,0,0,0, #gill_color k
+          1,0, #stalk_shape e
+          0,0,0,1,0, #stalk_root e
+          0,0,1,0, #stalk_surface_above_ring s
+          0,0,1,0, #stalk_surface_below_ring s
+          0,0,0,0,0,0,0,1,0, #stalk_color_above_ring w
+          0,0,0,0,0,0,0,1,0, #stalk_color_below_ring w
+          1, #veil_type p
+          0,0,1,0, #veil_color w
+          0,1,0, #ring_number o
+          0,0,0,0,1, #ring_type p
+          0,0,0,0,0,1,0,0,0, #spore_print_color r
+          0,0,0,1,0,0, #population s
+          0,0,0,0,0,1,0 #habitat u
+          ]]
+predict = dt.predict(x_new)
+print(predict)
+print("This mushroom is classified as poisonous")
